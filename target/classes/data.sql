@@ -1,13 +1,13 @@
 -- Sample Products
 INSERT INTO products (name, description, price, stock_quantity, image_url) VALUES 
-('Laptop', 'High-performance laptop with latest specifications', 999.99, 10, 'https://via.placeholder.com/300x200?text=Laptop'),
-('Smartphone', 'Latest smartphone with advanced features', 699.99, 15, 'https://via.placeholder.com/300x200?text=Smartphone'),
-('Headphones', 'Wireless noise-cancelling headphones', 199.99, 20, 'https://via.placeholder.com/300x200?text=Headphones'),
-('Tablet', '10-inch tablet perfect for work and entertainment', 399.99, 8, 'https://via.placeholder.com/300x200?text=Tablet'),
-('Smartwatch', 'Fitness tracking smartwatch with health monitoring', 299.99, 12, 'https://via.placeholder.com/300x200?text=Smartwatch'),
-('Camera', 'Professional DSLR camera for photography enthusiasts', 1299.99, 5, 'https://via.placeholder.com/300x200?text=Camera'),
-('Gaming Console', 'Next-gen gaming console for immersive gaming', 499.99, 7, 'https://via.placeholder.com/300x200?text=Gaming+Console'),
-('Wireless Speaker', 'Portable Bluetooth speaker with premium sound', 149.99, 25, 'https://via.placeholder.com/300x200?text=Wireless+Speaker');
+('Laptop', 'High-performance laptop with latest specifications', 999.99, 10, 'https://cdn.thewirecutter.com/wp-content/media/2024/11/cheapgaminglaptops-2048px-7981.jpg?auto=webp&quality=75&width=1024'),
+('Smartphone', 'Latest smartphone with advanced features', 699.99, 15, 'https://www.apple.com/v/iphone/home/cd/images/meta/iphone__kqge21l9n26q_og.png'),
+('Headphones', 'Wireless noise-cancelling headphones', 199.99, 20, 'https://cdn.mos.cms.futurecdn.net/PbBRJvxoAm4BM7vfhh8ZfG.jpg'),
+('Tablet', '10-inch tablet perfect for work and entertainment', 399.99, 8, 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRauO_3jTuSfQcZmQvQrrrW5ZT8GYDHcZRzug&s'),
+('Smartwatch', 'Fitness tracking smartwatch with health monitoring', 299.99, 12, 'https://cdn.thewirecutter.com/wp-content/media/2023/11/fitness-tracker-2048px-5346.jpg?auto=webp&quality=75&crop=1.91:1&width=1200'),
+('Camera', 'Professional DSLR camera for photography enthusiasts', 1299.99, 5, 'https://www.orionphotogroup.com/wp-content/uploads/2023/09/OPG-Blog-Best-Professional-Canon-Cameras-That-Should-Be-On-Every-Photographers-List-10-12-2023-scaled.jpg'),
+('Gaming Console', 'Next-gen gaming console for immersive gaming', 499.99, 7, 'https://image.benq.com/is/image/benqco/s22?$ResponsivePreset$'),
+('Wireless Speaker', 'Portable Bluetooth speaker with premium sound', 149.99, 25, 'https://www.jbl.com/dw/image/v2/BFND_PRD/on/demandware.static/-/Sites-siteCatalog_JB_US_Imported/default/dw0c3ec204/categoryimage/Charge5.jpg?sw=800&sh=400');
 
 -- Sample Users (password is 'password123' encrypted with BCrypt)
 INSERT INTO users (username, email, password) VALUES 

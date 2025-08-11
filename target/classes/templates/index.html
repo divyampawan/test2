@@ -562,6 +562,102 @@
         </div>
     </div>
 
+    <!-- Quick Actions Floating Button -->
+    <button id="quick-actions-fab" class="btn" type="button" data-bs-toggle="modal" data-bs-target="#quickActionsModal">
+        <i class="fas fa-bolt"></i>
+    </button>
+
+    <!-- Quick Actions Modal -->
+    <div class="modal fade" id="quickActionsModal" tabindex="-1" aria-labelledby="quickActionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickActionsModalLabel"><i class="fas fa-th-large me-2"></i>Quick Actions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action fs-5 p-3" onclick="showProducts(); return false;" data-bs-dismiss="modal">
+                            <i class="fas fa-home fa-fw me-3 text-primary"></i> View Products
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action fs-5 p-3" onclick="showCart(); return false;" data-bs-dismiss="modal">
+                            <i class="fas fa-shopping-cart fa-fw me-3 text-primary"></i> Go to Cart
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action fs-5 p-3" onclick="showOrders(); return false;" data-bs-dismiss="modal">
+                            <i class="fas fa-history fa-fw me-3 text-primary"></i> My Orders
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action fs-5 p-3" onclick="showProfile(); return false;" data-bs-dismiss="modal">
+                            <i class="fas fa-user-circle fa-fw me-3 text-primary"></i> My Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title" id="paymentModalLabel">Complete Your Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <ul class="nav nav-tabs nav-fill mb-3" id="paymentMethodTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="card-tab" data-bs-toggle="tab" data-bs-target="#card-payment" type="button" role="tab" aria-controls="card-payment" aria-selected="true">
+                                <i class="fas fa-credit-card me-2"></i>Card Payment
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="upi-tab" data-bs-toggle="tab" data-bs-target="#upi-payment" type="button" role="tab" aria-controls="upi-payment" aria-selected="false">
+                                <i class="fas fa-mobile-alt me-2"></i>UPI
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="paymentMethodTabContent">
+                        <div class="tab-pane fade show active" id="card-payment" role="tabpanel" aria-labelledby="card-tab">
+                            <form id="fakeCardForm">
+                                <div class="mb-3">
+                                    <label for="cardNumber" class="form-label">Card Number</label>
+                                    <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="expiryDate" class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" id="expiryDate" placeholder="MM / YY">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="cvv" class="form-label">CVV</label>
+                                        <input type="text" class="form-control" id="cvv" placeholder="123">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="upi-payment" role="tabpanel" aria-labelledby="upi-tab">
+                            <div class="text-center p-3">
+                                <p>Enter your UPI ID below to proceed.</p>
+                                <div class="mb-3">
+                                    <label for="upiId" class="form-label">Your UPI ID</label>
+                                    <input type="text" class="form-control" id="upiId" placeholder="yourname@oksbi">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="pay-now-btn" onclick="app.processFakePayment()">
+                        Pay <span id="payment-amount-display">$0.00</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
 </body>

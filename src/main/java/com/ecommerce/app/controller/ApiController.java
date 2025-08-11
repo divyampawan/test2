@@ -50,6 +50,12 @@ public class ApiController {
     private DiscountMapper discountMapper;
     
     @Autowired
+    private PaymentService paymentService;
+    
+    @Autowired
+    private PaymentMapper paymentMapper;
+    
+    @Autowired
     private DiscountService discountService;
     
     // User APIs
@@ -218,15 +224,28 @@ public class ApiController {
     }
     
     @PutMapping("/cart/{id}")
-    public ResponseEntity<String> updateCartQuantity(@PathVariable Long id, @RequestBody Map<String, Object> request) {
+    public ResponseEntity<List<CartItemDto>> updateCartQuantity(@PathVariable Long id, @RequestBody Map<String, Object> request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).build();
         }
         
-        int quantity = Integer.valueOf(request.get("quantity").toString());
-        cartService.updateQuantity(id, quantity);
-        return ResponseEntity.ok("Cart quantity updated");
+        String username = authentication.getName();
+        Optional<User> userOpt = userService.findByUsername(username);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+        
+        try {
+            int quantity = Integer.parseInt(request.get("quantity").toString());
+            cartService.updateQuantity(id, quantity);
+            
+            // Return the updated cart
+            List<CartItem> updatedCart = cartService.getCartItems(userOpt.get());
+            return ResponseEntity.ok(cartItemMapper.toDtoList(updatedCart));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     // Order APIs
@@ -362,5 +381,32 @@ public class ApiController {
         Discount savedDiscount = discountService.saveDiscount(discount);
         DiscountDto savedDiscountDto = discountMapper.toDto(savedDiscount);
         return ResponseEntity.ok(savedDiscountDto);
+    }
+
+    @PostMapping("/payments")
+    public ResponseEntity<PaymentDto> createPayment(@RequestBody CreatePaymentRequestDto requestDto) {
+        try {
+            PaymentDto paymentDto = paymentService.createPayment(requestDto);
+            return ResponseEntity.ok(paymentDto);
+        } catch (Exception e) {
+            // Return the error message in the response for easier debugging on the frontend
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @PostMapping("/payments/simulate-success")
+    public ResponseEntity<PaymentDto> simulateSuccessfulPayment(@RequestBody Map<String, String> payload) {
+        try {
+            String transactionId = payload.get("transactionId");
+            if (transactionId == null || transactionId.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            PaymentDto updatedPayment = paymentService.updatePaymentStatus(transactionId, PaymentStatus.SUCCESS);
+            return ResponseEntity.ok(updatedPayment);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
     }
 }

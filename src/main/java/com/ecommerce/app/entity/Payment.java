@@ -16,55 +16,38 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * The order associated with this payment.
-     * One-to-one relationship with Order entity.
-     */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false, unique = true)
     private Order order;
 
-    /**
-     * Unique transaction ID from the payment gateway (e.g., Stripe, Razorpay).
-     */
-    @Column(name = "transaction_id", nullable = false, unique = true)
+    // ✨ REMOVED updatable=false to avoid potential issues with some JPA providers
+    // The transactionId is set only once in the constructor or pre-persist logic anyway.
+    @Column(name = "transaction_id", nullable = false, unique = true, length = 50)
     private String transactionId;
 
-    /**
-     * The amount of the payment.
-     */
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    /**
-     * The currency of the payment (e.g., "USD", "INR").
-     */
-    @Column(nullable = false)
-    private String currency;
+    // This field can store details like the last 4 digits of a card.
+    @Column(name = "payment_details", length = 100)
+    private String paymentDetails;
 
-    /**
-     * The current status of the payment.
-     */
+    @Column(nullable = false, length = 3)
+    private String currency = "USD";
+
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus;
 
-    /**
-     * The method used for the payment.
-     */
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
     private PaymentMethod paymentMethod;
 
-    /**
-     * When the payment was created.
-     */
+    // ✨ Using @Column(updatable = false) is a more standard JPA way
+    // to ensure this field is only set on creation.
     @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
-    /**
-     * When the payment was last updated.
-     */
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -73,113 +56,63 @@ public class Payment {
         // Default constructor for JPA
     }
 
-    public Payment(Order order, String transactionId, BigDecimal amount, String currency, 
-                  PaymentStatus paymentStatus, PaymentMethod paymentMethod) {
+    public Payment(Order order, BigDecimal amount, String paymentDetails, PaymentMethod paymentMethod) {
+        if (order == null || amount == null || paymentMethod == null) {
+            throw new IllegalArgumentException("Order, amount, and payment method cannot be null");
+        }
         this.order = order;
-        this.transactionId = transactionId;
         this.amount = amount;
-        this.currency = currency;
-        this.paymentStatus = paymentStatus;
+        this.paymentDetails = paymentDetails;
         this.paymentMethod = paymentMethod;
+        this.paymentStatus = PaymentStatus.PENDING; // Default status
     }
 
     // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
+    public String getTransactionId() { return transactionId; }
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public String getPaymentDetails() { return paymentDetails; }
+    public void setPaymentDetails(String paymentDetails) { this.paymentDetails = paymentDetails; }
+    public String getCurrency() { return currency; }
+    public PaymentStatus getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(PaymentStatus paymentStatus) { this.paymentStatus = paymentStatus; }
+    public PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
-
-    public String getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getCurrency() {
-        return currency;
-    }
-
-    public void setCurrency(String currency) {
-        this.currency = currency;
-    }
-
-    public PaymentStatus getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public void setPaymentStatus(PaymentStatus paymentStatus) {
-        this.paymentStatus = paymentStatus;
-    }
-
-    public PaymentMethod getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(PaymentMethod paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    /**
+     * JPA lifecycle callback to set timestamps and transaction ID before saving.
+     */
+    @PrePersist
+    protected void onPrePersist() {
+        this.createdAt = LocalDateTime.now();
+        // Generate a unique transaction ID only if it hasn't been set.
+        if (this.transactionId == null) {
+            this.transactionId = "PAY-" + System.currentTimeMillis() + "-" + (long) (Math.random() * 9000L + 1000L);
+        }
     }
 
     /**
-     * Updates the timestamp before persisting or updating the entity.
+     * JPA lifecycle callback to set the update timestamp before updating.
      */
-    @PrePersist
     @PreUpdate
-    public void updateTimestamps() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        updatedAt = LocalDateTime.now();
+    protected void onPreUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     @Override
     public String toString() {
         return "Payment{" +
                 "id=" + id +
-                ", orderId=" + (order != null ? order.getId() : null) +
+                ", orderId=" + (order != null ? order.getId() : "null") +
                 ", transactionId='" + transactionId + '\'' +
                 ", amount=" + amount +
-                ", currency='" + currency + '\'' +
                 ", paymentStatus=" + paymentStatus +
-                ", paymentMethod=" + paymentMethod +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
                 '}';
     }
 }

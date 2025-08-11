@@ -16,7 +16,7 @@ class EcommerceApp {
 
     setupEventListeners() {
         console.log('Setting up event listeners...');
-        
+
         // Login form
         const loginForm = document.getElementById('loginForm');
         if (loginForm) {
@@ -64,19 +64,19 @@ class EcommerceApp {
         // Password confirmation validation
         const confirmPassword = document.getElementById('confirmPassword');
         const newPassword = document.getElementById('newPassword');
-        
+
         if (confirmPassword && newPassword) {
             confirmPassword.addEventListener('input', function() {
                 const newPasswordValue = newPassword.value;
                 const confirmPasswordValue = this.value;
-                
+
                 if (newPasswordValue !== confirmPasswordValue) {
                     this.setCustomValidity('Passwords do not match');
                 } else {
                     this.setCustomValidity('');
                 }
             });
-            
+
             newPassword.addEventListener('input', function() {
                 const confirmPasswordValue = confirmPassword.value;
                 if (confirmPasswordValue) {
@@ -107,7 +107,7 @@ class EcommerceApp {
         const authPage = document.getElementById('auth-page');
         const mainNav = document.getElementById('main-nav');
         const mainContent = document.getElementById('main-content');
-        
+
         if (authPage) {
             authPage.style.display = 'none';
             console.log('Auth page hidden');
@@ -126,7 +126,7 @@ class EcommerceApp {
         } else {
             console.log('Main content not found');
         }
-        
+
         // Ensure products page is visible and load products
         this.hideAllPagesExcept('products-page');
         const productsPage = document.getElementById('products-page');
@@ -145,7 +145,7 @@ class EcommerceApp {
         const authPage = document.getElementById('auth-page');
         const mainNav = document.getElementById('main-nav');
         const mainContent = document.getElementById('main-content');
-        
+
         if (authPage) authPage.style.display = 'flex';
         if (mainNav) mainNav.style.display = 'none';
         if (mainContent) mainContent.style.display = 'none';
@@ -223,30 +223,30 @@ class EcommerceApp {
             if (response.ok) {
                 const user = await response.json();
                 this.currentUser = user;
-                
+
                 // Update navigation display
                 const usernameDisplay = document.getElementById('username-display');
                 if (usernameDisplay) usernameDisplay.textContent = user.username;
-                
+
                 // Update profile page
                 const profileUsername = document.getElementById('profile-username');
                 if (profileUsername) profileUsername.textContent = user.username;
-                
+
                 const infoUsername = document.getElementById('info-username');
                 if (infoUsername) infoUsername.textContent = user.username;
-                
+
                 const infoEmail = document.getElementById('info-email');
                 if (infoEmail) infoEmail.textContent = user.email;
-                
+
                 const infoPhone = document.getElementById('info-phone');
                 if (infoPhone) infoPhone.textContent = user.phoneNumber || 'Not provided';
-                
+
                 const infoUserid = document.getElementById('info-userid');
                 if (infoUserid) infoUserid.textContent = user.id;
-                
+
                 const memberId = document.getElementById('member-id');
                 if (memberId) memberId.textContent = user.id;
-                
+
                 // Set member since date (using user ID as a simple example)
                 const memberSince = document.getElementById('member-since');
                 if (memberSince) {
@@ -337,12 +337,12 @@ class EcommerceApp {
     displayProducts(products) {
         console.log('Displaying products:', products);
         const container = document.getElementById('products-grid');
-        
+
         if (!container) {
             console.log('Products grid container not found');
             return;
         }
-        
+
         console.log('Found products grid container, clearing...');
         container.innerHTML = '';
 
@@ -363,13 +363,13 @@ class EcommerceApp {
         console.log(`Displaying ${products.length} products`);
         products.forEach((product, index) => {
             console.log(`Creating product card for: ${product.name}`);
-            
+
             // Safely format price
             const price = typeof product.price === 'number' ? product.price.toFixed(2) : '0.00';
-            
+
             // Use actual image URL from database or fallback to placeholder
             const imageUrl = product.imageUrl || `https://via.placeholder.com/300x200?text=${encodeURIComponent(product.name)}`;
-            
+
             // Create product card with safe HTML
             const productCard = document.createElement('div');
             productCard.className = 'col-md-6 col-lg-4';
@@ -380,7 +380,7 @@ class EcommerceApp {
                         <h5 class="product-title">${this.escapeHtml(product.name)}</h5>
                         <p class="product-description">${this.escapeHtml(product.description)}</p>
                         <div class="product-price">$${price}</div>
-                        
+
                         <div class="row">
                             <div class="col-4">
                                 <input type="number" value="1" min="1" class="form-control form-control-sm quantity-input" style="width: 100%;">
@@ -431,41 +431,79 @@ class EcommerceApp {
     }
 
     async loadCart() {
-        if (!this.token) return;
+        console.log('loadCart called');
+        if (!this.token) {
+            console.log('No token available, cannot load cart');
+            this.cart = []; // Ensure cart is empty if not logged in
+            return;
+        }
 
         try {
+            console.log('Fetching cart from /api/v1/cart');
             const response = await this.authenticatedRequest('/api/v1/cart');
+
             if (response.ok) {
                 const cartData = await response.json();
-                // Backend returns List<CartItemDto> directly, not wrapped in items property
+                // This is the function's only job now: update the internal cart data.
                 this.cart = Array.isArray(cartData) ? cartData : [];
-                console.log('Cart loaded:', this.cart);
-                this.displayCart();
+                console.log('Cart data successfully loaded into app.cart');
+                
+                // Update the cart count in the UI
                 this.updateCartCount();
+                
+                return true;
             } else {
-                console.error('Failed to load cart, status:', response.status);
+                console.error('Failed to load cart. Status:', response.status);
+                this.cart = []; // Clear cart on failure
+                return false;
             }
         } catch (error) {
-            console.error('Failed to load cart:', error);
+            console.error('Error exception during loadCart:', error);
+            this.cart = []; // Clear cart on error
+            return false;
         }
     }
 
     displayCart() {
+        console.log('Displaying cart, items:', this.cart);
         const container = document.getElementById('cart-items');
         const emptyCart = document.getElementById('empty-cart');
         const checkoutBtn = document.getElementById('checkout-btn');
-        
-        if (!container) return;
+        const cartSubtotal = document.getElementById('cart-subtotal');
+        const cartTotal = document.getElementById('cart-total');
 
-        if (this.cart.length === 0) {
-            container.innerHTML = '';
-            if (emptyCart) emptyCart.style.display = 'block';
-            if (checkoutBtn) checkoutBtn.style.display = 'none';
+        if (!container) {
+            console.error('Cart items container not found!');
             return;
         }
 
-        if (emptyCart) emptyCart.style.display = 'none';
-        if (checkoutBtn) checkoutBtn.style.display = 'block';
+        console.log('Cart item count:', this.cart.length);
+
+        if (this.cart.length === 0) {
+            console.log('Cart is empty, showing empty message');
+            container.innerHTML = '';
+            if (emptyCart) {
+                emptyCart.style.display = 'block';
+                console.log('Empty cart message shown');
+            }
+            if (checkoutBtn) {
+                checkoutBtn.style.display = 'none';
+                console.log('Checkout button hidden');
+            }
+            if (cartSubtotal) cartSubtotal.textContent = '$0.00';
+            if (cartTotal) cartTotal.textContent = '$0.00';
+            return;
+        }
+
+        console.log('Cart has items, showing checkout button');
+        if (emptyCart) {
+            emptyCart.style.display = 'none';
+            console.log('Empty cart message hidden');
+        }
+        if (checkoutBtn) {
+            checkoutBtn.style.display = 'block';
+            console.log('Checkout button shown');
+        }
 
         let total = 0;
         container.innerHTML = '';
@@ -475,7 +513,8 @@ class EcommerceApp {
             const productName = item.productName || (item.product ? item.product.name : 'Unknown Product');
             const productDescription = item.productDescription || (item.product ? item.product.description : '');
             const productPrice = item.productPrice || (item.product ? item.product.price : 0);
-            
+            const imageUrl = item.productImageUrl || `https://placehold.co/100x100/EEE/31343C?text=No+Image`;
+
             // Safely format prices
             const price = typeof productPrice === 'number' ? productPrice.toFixed(2) : '0.00';
             const itemTotal = item.quantity * (typeof productPrice === 'number' ? productPrice : 0);
@@ -486,6 +525,9 @@ class EcommerceApp {
             cartItem.className = 'cart-item';
             cartItem.innerHTML = `
                 <div class="row align-items-center">
+                    <div class="col-2">
+                         <img src="${imageUrl}" alt="${this.escapeHtml(item.productName)}" class="img-fluid rounded">
+                    </div>
                     <div class="col-md-4">
                         <h6 class="mb-1">${this.escapeHtml(productName)}</h6>
                         <p class="text-muted mb-0">${this.escapeHtml(productDescription)}</p>
@@ -494,7 +536,7 @@ class EcommerceApp {
                         <span class="fw-bold">$${price}</span>
                     </div>
                     <div class="col-md-2">
-                        <input type="number" value="${item.quantity}" min="1" class="form-control quantity-input" 
+                        <input type="number" value="${item.quantity}" min="1" class="form-control quantity-input"
                                onchange="app.updateQuantity(${item.id}, this.value)">
                     </div>
                     <div class="col-md-2">
@@ -510,12 +552,12 @@ class EcommerceApp {
             container.appendChild(cartItem);
         });
 
-        const cartSubtotal = document.getElementById('cart-subtotal');
-        const cartTotal = document.getElementById('cart-total');
         const totalFormatted = typeof total === 'number' ? total.toFixed(2) : '0.00';
-        if (cartSubtotal) cartSubtotal.textContent = `$${totalFormatted}`;
-        if (cartTotal) cartTotal.textContent = `$${totalFormatted}`;
-        
+        const subtotalElement = document.getElementById('cart-subtotal');
+        const totalElement = document.getElementById('cart-total');
+        if (subtotalElement) subtotalElement.textContent = `$${totalFormatted}`;
+        if (totalElement) totalElement.textContent = `$${totalFormatted}`;
+
         // Store the subtotal for discount calculations
         this.cartSubtotal = total;
     }
@@ -526,17 +568,27 @@ class EcommerceApp {
         try {
             const response = await this.authenticatedRequest(`/api/v1/cart/${itemId}`, {
                 method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ quantity: parseInt(newQuantity) })
             });
 
             if (response.ok) {
-                this.loadCart();
+                // Get the updated cart directly from the response
+                const updatedCart = await response.json(); 
+                this.cart = Array.isArray(updatedCart) ? updatedCart : [];
+                this.displayCart(); // Refresh the UI with the new data
             } else {
                 const error = await response.text();
-                this.showAlert('products-alert', 'Failed to update quantity: ' + error, 'danger');
+                this.showAlert('cart-alert', 'Failed to update quantity: ' + error, 'danger');
+                // Fall back to full cart reload on error
+                this.loadCart();
             }
         } catch (error) {
-            this.showAlert('products-alert', 'Failed to update quantity: ' + error.message, 'danger');
+            this.showAlert('cart-alert', 'Failed to update quantity: ' + error.message, 'danger');
+            // Fall back to full cart reload on error
+            this.loadCart();
         }
     }
 
@@ -591,7 +643,7 @@ class EcommerceApp {
         orders.forEach(order => {
             const orderDate = new Date(order.orderDate).toLocaleDateString();
             const totalAmount = typeof order.totalAmount === 'number' ? order.totalAmount.toFixed(2) : '0.00';
-            
+
             const orderCard = document.createElement('div');
             orderCard.className = 'order-card';
             orderCard.innerHTML = `
@@ -626,92 +678,92 @@ class EcommerceApp {
     }
 
     showOrderDetails(order) {
-        // Defensive: accept either order.orderItems (API you showed) or order.items (old shape) 
-        const items = Array.isArray(order.orderItems) ? order.orderItems 
-                     : Array.isArray(order.items) ? order.items 
-                     : []; 
-    
-        // Build HTML rows for each item defensively 
-        let itemsHtml = ''; 
-        items.forEach(item => { 
-            // Normalize fields from possible shapes 
-            const name = this.escapeHtml(item.productName || (item.product && item.product.name) || 'Product'); 
-            const quantity = Number(item.quantity || item.qty || (item.product && item.quantity) || 0); 
-            const price = Number(item.price || (item.product && item.product.price) || 0); 
-            const subtotal = Number(item.totalPrice || (item.totalPrice === 0 ? 0 : (price * quantity)) || 0); 
-    
-            itemsHtml += ` 
-                <tr> 
-                    <td>${name}</td> 
-                    <td class="text-center">${quantity}</td> 
-                    <td class="text-end">$${price.toFixed(2)}</td> 
-                    <td class="text-end">$${subtotal.toFixed(2)}</td> 
-                </tr> 
-            `; 
-        }); 
-    
-        // Ensure safe date and amounts 
-        const orderDate = order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—'; 
+        // Defensive: accept either order.orderItems (API you showed) or order.items (old shape)
+        const items = Array.isArray(order.orderItems) ? order.orderItems
+                     : Array.isArray(order.items) ? order.items
+                     : [];
+
+        // Build HTML rows for each item defensively
+        let itemsHtml = '';
+        items.forEach(item => {
+            // Normalize fields from possible shapes
+            const name = this.escapeHtml(item.productName || (item.product && item.product.name) || 'Product');
+            const quantity = Number(item.quantity || item.qty || (item.product && item.quantity) || 0);
+            const price = Number(item.price || (item.product && item.product.price) || 0);
+            const subtotal = Number(item.totalPrice || (item.totalPrice === 0 ? 0 : (price * quantity)) || 0);
+
+            itemsHtml += `
+                <tr>
+                    <td>${name}</td>
+                    <td class="text-center">${quantity}</td>
+                    <td class="text-end">$${price.toFixed(2)}</td>
+                    <td class="text-end">$${subtotal.toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        // Ensure safe date and amounts
+        const orderDate = order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '—';
         const totalAmount = Number(order.totalAmount || order.total || 0);
-        
+
         const modal = `
-            <div class="modal fade" id="orderDetailsModal" tabindex="-1"> 
-                <div class="modal-dialog modal-lg"> 
-                    <div class="modal-content"> 
-                        <div class="modal-header"> 
-                            <h5 class="modal-title">Order #${order.id} Details</h5> 
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button> 
-                        </div> 
-                        <div class="modal-body"> 
-                            <div class="row mb-3"> 
-                                <div class="col-md-6"> 
-                                    <strong>Order Date:</strong> ${orderDate}<br> 
-                                    <strong>Status:</strong> <span class="badge bg-primary">${this.escapeHtml(order.status || '—')}</span> 
+            <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Order #${order.id} Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Order Date:</strong> ${orderDate}<br>
+                                    <strong>Status:</strong> <span class="badge bg-primary">${this.escapeHtml(order.status || '—')}</span>
                                     ${order.discountCode ? `<br><strong>Discount Code:</strong> ${this.escapeHtml(order.discountCode)}` : ''}
-                                </div> 
-                                <div class="col-md-6 text-end"> 
+                                </div>
+                                <div class="col-md-6 text-end">
                                     <strong>Subtotal:</strong> $${Number(order.subtotal || 0).toFixed(2)}<br>
                                     ${order.discountAmount && Number(order.discountAmount) > 0 ? `<strong>Discount:</strong> -$${Number(order.discountAmount).toFixed(2)}<br>` : ''}
-                                    <strong>Total Amount:</strong> <span class="text-primary">$${totalAmount.toFixed(2)}</span> 
-                                </div> 
-                            </div> 
-                            <h6>Order Items:</h6> 
-                            <div class="table-responsive"> 
-                                <table class="table table-sm"> 
-                                    <thead> 
-                                        <tr> 
-                                            <th>Product</th> 
-                                            <th class="text-center">Quantity</th> 
-                                            <th class="text-end">Price</th> 
-                                            <th class="text-end">Subtotal</th> 
-                                        </tr> 
-                                    </thead> 
-                                    <tbody> 
-                                        ${itemsHtml || `<tr><td colspan="4" class="text-center text-muted">No items found</td></tr>`} 
-                                    </tbody> 
-                                </table> 
-                            </div> 
-                            ${order.discountCode && Number(order.discountAmount) > 0 ? `<div class="mt-3"><strong>Discount Applied:</strong> ${this.escapeHtml(order.discountCode)} (-$${Number(order.discountAmount).toFixed(2)})</div>` : ''} 
-                        </div> 
-                    </div> 
-                </div> 
-            </div> 
+                                    <strong>Total Amount:</strong> <span class="text-primary">$${totalAmount.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <h6>Order Items:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-center">Quantity</th>
+                                            <th class="text-end">Price</th>
+                                            <th class="text-end">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsHtml || `<tr><td colspan="4" class="text-center text-muted">No items found</td></tr>`}
+                                    </tbody>
+                                </table>
+                            </div>
+                            ${order.discountCode && Number(order.discountAmount) > 0 ? `<div class="mt-3"><strong>Discount Applied:</strong> ${this.escapeHtml(order.discountCode)} (-$${Number(order.discountAmount).toFixed(2)})</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
-        
+
         // Remove existing modal if any, then append and show new modal
         const existingModal = document.getElementById('orderDetailsModal');
         if (existingModal) {
             existingModal.remove();
         }
-        
+
         // Add new modal to body
         document.body.insertAdjacentHTML('beforeend', modal);
-        
+
         // Show modal
         const modalElement = document.getElementById('orderDetailsModal');
         const bootstrapModal = new bootstrap.Modal(modalElement);
         bootstrapModal.show();
-        
+
         // Clean up modal when hidden
         modalElement.addEventListener('hidden.bs.modal', () => {
             modalElement.remove();
@@ -724,31 +776,79 @@ class EcommerceApp {
             return;
         }
 
-        try {
-            const discountCode = this.currentDiscountCode || null;
-            const requestBody = {
-                discountCode: discountCode
-            };
-            
-            const response = await this.authenticatedRequest('/api/v1/orders', {
-                method: 'POST',
-                body: JSON.stringify(requestBody)
-            });
+        // Get the total amount from the cart summary to display in the modal
+        const totalAmount = document.getElementById('cart-total').textContent;
+        const paymentAmountDisplay = document.getElementById('payment-amount-display');
+        if (paymentAmountDisplay) {
+            paymentAmountDisplay.textContent = totalAmount;
+        }
 
-            if (response.ok) {
-                const order = await response.json();
-                this.showAlert('products-alert', `Order placed successfully! Order #${order.id}`, 'success');
-                this.cart = [];
-                this.currentDiscountCode = null;
-                this.clearDiscount();
-                this.loadCart();
+        // Create a Bootstrap Modal instance and show it
+        const paymentModalEl = document.getElementById('paymentModal');
+        if (paymentModalEl) {
+            const paymentModal = new bootstrap.Modal(paymentModalEl);
+            paymentModal.show();
+        } else {
+            console.error('CRITICAL: Payment modal HTML not found!');
+            this.showAlert('cart-alert', 'Could not open payment page. Please refresh.', 'danger');
+        }
+    }
+
+    async processFakePayment() {
+        const payButton = document.getElementById('pay-now-btn');
+        payButton.disabled = true;
+        payButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+
+        try {
+            // Step 1: Create the Order
+            const orderResponse = await this.authenticatedRequest('/api/v1/orders', {
+                method: 'POST',
+                body: JSON.stringify({ discountCode: this.currentDiscountCode || null })
+            });
+            if (!orderResponse.ok) throw new Error('Failed to create the order.');
+            const orderData = await orderResponse.json();
+
+            // Step 2: Create the Payment record
+            const paymentMethod = document.querySelector('#paymentMethodTabs .nav-link.active').id === 'card-tab' ? 'CARD' : 'UPI';
+            const createPaymentResponse = await this.authenticatedRequest('/api/v1/payments', {
+                method: 'POST',
+                body: JSON.stringify({
+                    orderId: orderData.id,
+                    paymentMethod: paymentMethod,
+                    paymentDetails: `Simulated ${paymentMethod} Payment`
+                })
+            });
+            if (!createPaymentResponse.ok) throw new Error('Failed to create the payment record.');
+            const paymentData = await createPaymentResponse.json();
+
+            // Step 3: Simulate the "Successful Payment" confirmation
+            const simulateResponse = await this.authenticatedRequest('/api/v1/payments/simulate-success', {
+                method: 'POST',
+                body: JSON.stringify({ transactionId: paymentData.transactionId })
+            });
+            if (!simulateResponse.ok) throw new Error('Payment confirmation failed.');
+            
+            // --- UI Updates after all backend calls succeed ---
+            setTimeout(() => {
+                const paymentModalEl = document.getElementById('paymentModal');
+                bootstrap.Modal.getInstance(paymentModalEl).hide();
+
+                this.showAlert('orders-alert', 'Payment successful! Your order has been placed.', 'success');
                 this.showOrders();
-            } else {
-                const error = await response.text();
-                this.showAlert('products-alert', 'Checkout failed: ' + error, 'danger');
-            }
+                this.updateCartCount();
+
+                // Reset the button's state on success
+                payButton.disabled = false;
+                payButton.innerHTML = `Pay <span id="payment-amount-display">${document.getElementById('cart-total').textContent}</span>`;
+            }, 1500); // 1.5 second delay for UX
+
         } catch (error) {
-            this.showAlert('products-alert', 'Checkout failed: ' + error.message, 'danger');
+            console.error('Checkout process failed:', error);
+            this.showAlert('cart-alert', error.message || 'There was an issue with your checkout.', 'danger');
+            
+            // Reset the button's state on failure
+            payButton.disabled = false;
+            payButton.innerHTML = `Pay <span id="payment-amount-display">${document.getElementById('cart-total').textContent}</span>`;
         }
     }
 
@@ -777,11 +877,11 @@ class EcommerceApp {
             console.log(`Alert element ${elementId} not found`);
             return;
         }
-        
+
         alertElement.textContent = message;
         alertElement.className = `alert alert-${type}`;
         alertElement.style.display = 'block';
-        
+
         // Auto-hide after 5 seconds
         setTimeout(() => {
             alertElement.style.display = 'none';
@@ -843,10 +943,10 @@ class EcommerceApp {
         this.hideAllPagesExcept('products-page');
         const productsPage = document.getElementById('products-page');
         const mainContent = document.getElementById('main-content');
-        
+
         console.log('Main content display style:', mainContent ? mainContent.style.display : 'not found');
         console.log('Products page display style before:', productsPage ? productsPage.style.display : 'not found');
-        
+
         if (productsPage) {
             console.log('Found products page, setting display to block');
             productsPage.style.display = 'block';
@@ -862,13 +962,35 @@ class EcommerceApp {
         console.log('Showing cart page...');
         this.hideAllPagesExcept('cart-page');
         const cartPage = document.getElementById('cart-page');
+        
         if (cartPage) {
             cartPage.style.display = 'block';
-            await this.loadCart();
             this.updateActiveNav('cart');
-            
-            // Fetch and display available discount coupons
-            await this.fetchAndDisplayDiscounts();
+
+            try {
+                // Step 1: Fetch the latest cart data from the server
+                await this.loadCart();
+
+                // Step 2: Use the fetched data to render the cart items and totals
+                this.displayCart();
+
+                // Step 3: Show checkout button if cart has items
+                if (this.cart && this.cart.length > 0) {
+                    const checkoutBtn = document.getElementById('checkout-btn');
+                    if (checkoutBtn) {
+                        checkoutBtn.style.display = 'block';
+                        console.log('Checkout button is visible');
+                    }
+                }
+
+                // Step 4: Fetch and display the available discount coupons
+                await this.fetchAndDisplayDiscounts();
+                
+                console.log('Cart page loaded successfully');
+            } catch (error) {
+                console.error('Error in showCart:', error);
+                this.showAlert('cart-alert', 'Error loading cart: ' + (error.message || 'Unknown error'), 'danger');
+            }
         }
     }
 
@@ -925,7 +1047,7 @@ class EcommerceApp {
     updateActiveNav(section) {
         const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
         navLinks.forEach(link => link.classList.remove('active'));
-        
+
         const activeLink = document.querySelector(`[onclick="show${section.charAt(0).toUpperCase() + section.slice(1)}()"]`);
         if (activeLink) {
             activeLink.classList.add('active');
@@ -938,31 +1060,31 @@ class EcommerceApp {
         const discountRow = document.getElementById('discount-row');
         const discountAmount = document.getElementById('discount-amount');
         const cartTotal = document.getElementById('cart-total');
-        
+
         if (!discountCode) {
             this.showDiscountMessage('Please enter a discount code', 'warning');
             return;
         }
-        
+
         if (!this.cartSubtotal || this.cartSubtotal <= 0) {
             this.showDiscountMessage('Cart is empty', 'warning');
             return;
         }
-        
+
         try {
             const response = await this.authenticatedRequest(`/api/v1/discounts/validate?code=${encodeURIComponent(discountCode)}&amount=${this.cartSubtotal}`);
-            
+
             if (response.ok) {
                 const discountData = await response.json();
                 if (discountData.valid) {
                     const discountValue = discountData.discountAmount || 0;
                     const newTotal = this.cartSubtotal - discountValue;
-                    
+
                     // Show discount row
                     discountRow.style.display = 'flex';
                     discountAmount.textContent = `-$${discountValue.toFixed(2)}`;
                     cartTotal.textContent = `$${newTotal.toFixed(2)}`;
-                    
+
                     this.showDiscountMessage(`Discount applied! ${discountData.description || ''}`, 'success');
                     this.currentDiscountCode = discountCode;
                 } else {
@@ -979,25 +1101,25 @@ class EcommerceApp {
             this.clearDiscount();
         }
     }
-    
+
     clearDiscount() {
         const discountRow = document.getElementById('discount-row');
         const discountAmount = document.getElementById('discount-amount');
         const cartTotal = document.getElementById('cart-total');
-        
+
         discountRow.style.display = 'none';
         discountAmount.textContent = '-$0.00';
         cartTotal.textContent = `$${this.cartSubtotal ? this.cartSubtotal.toFixed(2) : '0.00'}`;
         this.currentDiscountCode = null;
     }
-    
+
     showDiscountMessage(message, type) {
         const discountMessage = document.getElementById('discount-message');
         if (discountMessage) {
             discountMessage.textContent = message;
             discountMessage.className = `form-text text-white text-${type}`;
             discountMessage.style.display = 'block';
-            
+
             // Auto-hide after 5 seconds
             setTimeout(() => {
                 discountMessage.style.display = 'none';
@@ -1017,61 +1139,62 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Global functions for navigation
-function showProducts() { 
+function showProducts() {
     console.log('Global showProducts called');
     if (app) {
         console.log('App found, calling showProducts');
-        app.showProducts(); 
+        app.showProducts();
     } else {
         console.log('App not found');
     }
 }
 
-function showCart() { 
+function showCart() {
     console.log('Global showCart called');
     if (app) {
         console.log('App found, calling showCart');
-        app.showCart(); 
+        app.showCart();
     } else {
         console.log('App not found');
     }
 }
 
-function showOrders() { 
+function showOrders() {
     console.log('Global showOrders called');
     if (app) {
         console.log('App found, calling showOrders');
-        app.showOrders(); 
+        app.showOrders();
     } else {
         console.log('App not found');
     }
 }
 
-function showProfile() { 
+function showProfile() {
     console.log('Global showProfile called');
     if (app) {
         console.log('App found, calling showProfile');
-        app.showProfile(); 
+        app.showProfile();
     } else {
         console.log('App not found');
     }
 }
 
-function logout() { 
+function logout() {
     console.log('Global logout called');
     if (app) {
         console.log('App found, calling logout');
-        app.logout(); 
+        app.logout();
     } else {
         console.log('App not found');
     }
 }
 
-function checkout() { 
+// New checkout function that opens the payment modal
+function checkout() {
     console.log('Global checkout called');
     if (app) {
         console.log('App found, calling checkout');
-        app.checkout(); 
+        app.checkout();
     } else {
         console.log('App not found');
     }

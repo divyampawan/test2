@@ -23,6 +23,7 @@ public class CartItemMapper {
         if (cartItem.getProduct() != null) {
             cartItemDto.setProductId(cartItem.getProduct().getId());
             cartItemDto.setProductName(cartItem.getProduct().getName());
+            cartItemDto.setProductImageUrl(cartItem.getProduct().getImageUrl());
             cartItemDto.setProductPrice(cartItem.getProduct().getPrice().doubleValue());
             cartItemDto.setSubtotal(cartItem.getProduct().getPrice().multiply(new BigDecimal(cartItem.getQuantity())).doubleValue());
         }

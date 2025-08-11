@@ -5,16 +5,18 @@ public class CartItemDto {
     private Long id;
     private Long productId;
     private String productName;
+    private String productImageUrl;
     private Double productPrice;
     private Integer quantity;
     private Double subtotal;
     
     public CartItemDto() {}
     
-    public CartItemDto(Long id, Long productId, String productName, Double productPrice, Integer quantity, Double subtotal) {
+    public CartItemDto(Long id, Long productId, String productName, String productImageUrl, Double productPrice, Integer quantity, Double subtotal) {
         this.id = id;
         this.productId = productId;
         this.productName = productName;
+        this.productImageUrl = productImageUrl;
         this.productPrice = productPrice;
         this.quantity = quantity;
         this.subtotal = subtotal;
@@ -42,6 +44,14 @@ public class CartItemDto {
     
     public void setProductName(String productName) {
         this.productName = productName;
+    }
+    
+    public String getProductImageUrl() {
+        return productImageUrl;
+    }
+    
+    public void setProductImageUrl(String productImageUrl) {
+        this.productImageUrl = productImageUrl;
     }
     
     public Double getProductPrice() {
