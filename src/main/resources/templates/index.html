@@ -268,7 +268,7 @@
             <a class="navbar-brand" href="#" onclick="showProducts()">
                 <i class="fas fa-shopping-bag me-2"></i>Ecommerce Store
             </a>
-            
+
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="#" onclick="showProducts()">
                     <i class="fas fa-home me-1"></i>Products
@@ -300,9 +300,9 @@
                             <h2>Welcome</h2>
                             <p class="text-muted">Sign in to your account</p>
                         </div>
-                        
+
                         <div id="auth-alert" class="alert" style="display: none;" role="alert"></div>
-                        
+
                         <ul class="nav nav-tabs mb-3" id="auth-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" id="login-tab" data-bs-toggle="tab" href="#login-form">Login</a>
@@ -311,7 +311,7 @@
                                 <a class="nav-link" id="register-tab" data-bs-toggle="tab" href="#register-form">Register</a>
                             </li>
                         </ul>
-                        
+
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="login-form">
                                 <form id="loginForm">
@@ -376,7 +376,7 @@
                         <h3 class="mb-4">
                             <i class="fas fa-shopping-cart me-2"></i>Shopping Cart
                         </h3>
-                        
+
                         <div id="empty-cart" class="empty-cart" style="display: none;">
                             <i class="fas fa-shopping-cart"></i>
                             <h4>Your cart is empty</h4>
@@ -385,22 +385,22 @@
                                 <i class="fas fa-shopping-bag me-2"></i>Continue Shopping
                             </button>
                         </div>
-                        
+
                         <div id="cart-items">
                             <!-- Cart items will be loaded here -->
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-lg-4">
                     <div class="cart-summary">
                         <h4 class="mb-3">Order Summary</h4>
-                        
+
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal:</span>
                             <span id="cart-subtotal">$0.00</span>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="discount-code" class="form-label text-white">Discount Code</label>
                             <div class="input-group">
@@ -411,25 +411,25 @@
                             </div>
                             <div id="discount-message" class="form-text text-white mt-1" style="display: none;"></div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <h6 class="text-white-50 fw-light">Available Coupons</h6>
                             <div id="discount-buttons-container">
                                 </div>
                         </div>
-                        
+
                         <div class="d-flex justify-content-between mb-2" id="discount-row" style="display: none;">
                             <span>Discount:</span>
                             <span id="discount-amount" class="text-success">-$0.00</span>
                         </div>
-                        
+
                         <hr class="text-white-50">
-                        
+
                         <div class="d-flex justify-content-between mb-3 h5">
                             <span>Total:</span>
                             <span class="fw-bold" id="cart-total">$0.00</span>
                         </div>
-                        
+
                         <button class="btn btn-checkout w-100" onclick="checkout()" id="checkout-btn" style="display: none;">
                             <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
                         </button>
@@ -443,9 +443,9 @@
             <h3 class="mb-4">
                 <i class="fas fa-history me-2"></i>Order History
             </h3>
-            
+
             <div id="orders-alert" class="alert" style="display: none;" role="alert"></div>
-            
+
             <div id="orders-list">
                 <!-- Orders will be loaded here -->
             </div>
@@ -461,9 +461,9 @@
                 <h3 id="profile-username">Username</h3>
                 <p class="mb-0 opacity-75">Member since <span id="member-since">Jan 2024</span></p>
             </div>
-            
+
             <div id="profile-alert" class="alert" style="display: none;" role="alert"></div>
-            
+
             <div class="row">
                 <!-- Profile Information -->
                 <div class="col-lg-6">
@@ -471,22 +471,22 @@
                         <h4 class="mb-4">
                             <i class="fas fa-user-circle me-2"></i>Profile Information
                         </h4>
-                        
+
                         <div class="info-item">
                             <div class="info-label">Username</div>
                             <div id="info-username">username</div>
                         </div>
-                        
+
                         <div class="info-item">
                             <div class="info-label">Email</div>
                             <div id="info-email">email@example.com</div>
                         </div>
-                        
+
                         <div class="info-item">
                             <div class="info-label">Phone Number</div>
                             <div id="info-phone">Not provided</div>
                         </div>
-                        
+
                         <div class="info-item">
                             <div class="info-label">User ID</div>
                             <div id="info-userid">1</div>
@@ -500,26 +500,26 @@
                         <h4 class="mb-4">
                             <i class="fas fa-lock me-2"></i>Change Password
                         </h4>
-                        
+
                         <div id="password-alert" class="alert" style="display: none;" role="alert"></div>
-                        
+
                         <form id="passwordForm">
                             <div class="mb-3">
                                 <label for="currentPassword" class="form-label">Current Password</label>
                                 <input type="password" class="form-control" id="currentPassword" required>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="newPassword" class="form-label">New Password</label>
                                 <input type="password" class="form-control" id="newPassword" required>
                                 <small class="form-text text-muted">Password must be at least 6 characters</small>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="confirmPassword" class="form-label">Confirm New Password</label>
                                 <input type="password" class="form-control" id="confirmPassword" required>
                             </div>
-                            
+
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-key me-2"></i>Update Password
                             </button>
@@ -535,7 +535,7 @@
                         <h4 class="mb-4">
                             <i class="fas fa-chart-bar me-2"></i>Account Statistics
                         </h4>
-                        
+
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="text-center">
@@ -650,7 +650,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="pay-now-btn" onclick="app.processFakePayment()">
+                    <button type="button" class="btn btn-primary" id="pay-now-btn" onclick="app.processPayment()">
                         Pay <span id="payment-amount-display">$0.00</span>
                     </button>
                 </div>
@@ -661,4 +661,4 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/app.js"></script>
 </body>
-</html> 
+</html>

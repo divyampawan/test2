@@ -3,69 +3,123 @@ package com.ecommerce.app.controller;
 import com.ecommerce.app.dto.ProductDto;
 import com.ecommerce.app.entity.Product;
 import com.ecommerce.app.mapper.ProductMapper;
-import com.ecommerce.app.service.ProductService;
+import com.ecommerce.app.service.interfaces.IProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-// Temporarily disabled - using ApiController instead
-//@RestController
-//@RequestMapping("/api/v1/products")
-//@CrossOrigin(origins = "*")
-@Deprecated
+@RestController
+@RequestMapping("/api/v1/products")
+@CrossOrigin(origins = "*")
 public class ProductController {
 
-    @Autowired
-    private ProductService productService;
+    private final IProductService productService;
+    private final ProductMapper productMapper;
 
     @Autowired
-    private ProductMapper productMapper;
+    public ProductController(IProductService productService, ProductMapper productMapper) {
+        this.productService = productService;
+        this.productMapper = productMapper;
+    }
 
     @GetMapping
     public ResponseEntity<List<ProductDto>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        return ResponseEntity.ok(productMapper.toDtoList(products));
+        try {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(productMapper.toDtoList(products));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        return productService.getProductById(id)
-                .map(productMapper::toDto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return productService.getProductById(id)
+                    .map(productMapper::toDto)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping
-    public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto) {
-        Product product = productMapper.toEntity(productDto);
-        Product savedProduct = productService.saveProduct(product);
-        return ResponseEntity.ok(productMapper.toDto(savedProduct));
+    public ResponseEntity<?> createProduct(@RequestBody ProductDto productDto) {
+        try {
+            // Validate required fields
+            if (productDto.getName() == null || productDto.getName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Product name is required");
+            }
+            if (productDto.getPrice() == null || productDto.getPrice().compareTo(java.math.BigDecimal.ZERO) < 0) {
+                return ResponseEntity.badRequest().body("Product price must be a positive number");
+            }
+            
+            Product product = productMapper.toEntity(productDto);
+            Product savedProduct = productService.saveProduct(product);
+            
+            // Create the location header with the new product's URL
+            URI location = ServletUriComponentsBuilder
+                    .fromCurrentRequest()
+                    .path("/{id}")
+                    .buildAndExpand(savedProduct.getId())
+                    .toUri();
+            
+            return ResponseEntity.created(location).body(productMapper.toDto(savedProduct));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error creating product: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
-        Optional<Product> productOpt = productService.getProductById(id);
-        if (productOpt.isPresent()) {
-            Product product = productOpt.get();
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
+        try {
+            // Check if product exists
+            Optional<Product> existingProduct = productService.getProductById(id);
+            if (existingProduct.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Validate required fields
+            if (productDto.getName() == null || productDto.getName().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Product name is required");
+            }
+            if (productDto.getPrice() == null || productDto.getPrice().compareTo(java.math.BigDecimal.ZERO) < 0) {
+                return ResponseEntity.badRequest().body("Product price must be a positive number");
+            }
+            
+            // Update the existing product
+            Product product = existingProduct.get();
             product.setName(productDto.getName());
             product.setDescription(productDto.getDescription());
             product.setPrice(productDto.getPrice());
             product.setStockQuantity(productDto.getStockQuantity());
+            product.setImageUrl(productDto.getImageUrl());
+            
             Product updatedProduct = productService.saveProduct(product);
             return ResponseEntity.ok(productMapper.toDto(updatedProduct));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error updating product: " + e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
-        if (productService.getProductById(id).isPresent()) {
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+        try {
+            // Check if product exists
+            if (!productService.getProductById(id).isPresent()) {
+                return ResponseEntity.notFound().build();
+            }
+            
             productService.deleteProduct(id);
             return ResponseEntity.ok("Product deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error deleting product: " + e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
 }

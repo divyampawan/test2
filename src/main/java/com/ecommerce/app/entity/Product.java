@@ -37,7 +37,6 @@ public class Product {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    // Constructors
     public Product() {}
     
     public Product(String name, String description, BigDecimal price, String imageUrl, int stockQuantity) {

@@ -2,73 +2,25 @@ package com.ecommerce.app.mapper;
 
 import com.ecommerce.app.dto.PaymentDto;
 import com.ecommerce.app.entity.Payment;
-import com.ecommerce.app.entity.PaymentMethod;
-import com.ecommerce.app.entity.PaymentStatus;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Component;
 
-/**
- * Mapper for converting between Payment entity and PaymentDto without MapStruct.
- */
-@Component
-public class PaymentMapper {
+@Mapper(componentModel = "spring")
+public interface PaymentMapper {
 
-    /**
-     * Converts a Payment entity to a PaymentDto.
-     */
-    public PaymentDto toDto(Payment payment) {
-        if (payment == null) {
-            return null;
-        }
+    @Mapping(source = "order.id", target = "orderId")
+    @Mapping(target = "paymentStatus", expression = "java(payment.getPaymentStatus() != null ? payment.getPaymentStatus().name() : null)")
+    @Mapping(target = "paymentMethod", expression = "java(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : null)")
+    PaymentDto toDto(Payment payment);
 
-        PaymentDto dto = new PaymentDto();
-        dto.setId(payment.getId());
-        dto.setTransactionId(payment.getTransactionId());
-        dto.setAmount(payment.getAmount());
-        dto.setCurrency(payment.getCurrency());
-        dto.setPaymentDetails(payment.getPaymentDetails());
-        dto.setCreatedAt(payment.getCreatedAt());
-        dto.setUpdatedAt(payment.getUpdatedAt());
-
-        if (payment.getOrder() != null) {
-            dto.setOrderId(payment.getOrder().getId());
-        }
-
-        if (payment.getPaymentStatus() != null) {
-            dto.setPaymentStatus(payment.getPaymentStatus().name());
-        }
-        if (payment.getPaymentMethod() != null) {
-            dto.setPaymentMethod(payment.getPaymentMethod().name());
-        }
-
-        return dto;
-    }
-
-    /**
-     * Converts a PaymentDto to a Payment entity.
-     */
-    public Payment toEntity(PaymentDto dto) {
-        if (dto == null) {
-            return null;
-        }
-
-        Payment payment = new Payment();
-        // The Order object must be fetched and set in the service layer.
-        payment.setId(dto.getId());
-
-        // ✅ FIX: REMOVED this line. The transaction ID is generated automatically
-        // by the Payment entity's @PrePersist method before it's saved.
-        // payment.setTransactionId(dto.getTransactionId());
-
-        payment.setAmount(dto.getAmount());
-        payment.setPaymentDetails(dto.getPaymentDetails());
-
-        if (dto.getPaymentStatus() != null) {
-            payment.setPaymentStatus(PaymentStatus.valueOf(dto.getPaymentStatus()));
-        }
-        if (dto.getPaymentMethod() != null) {
-            payment.setPaymentMethod(PaymentMethod.valueOf(dto.getPaymentMethod()));
-        }
-
-        return payment;
-    }
+    @Mapping(target = "order", ignore = true)
+    @Mapping(target = "transactionId", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "paymentStatus", expression = "java(dto.getPaymentStatus() != null ? com.ecommerce.app.entity.PaymentStatus.valueOf(dto.getPaymentStatus()) : com.ecommerce.app.entity.PaymentStatus.PENDING)")
+    @Mapping(target = "paymentMethod", expression = "java(dto.getPaymentMethod() != null ? com.ecommerce.app.entity.PaymentMethod.valueOf(dto.getPaymentMethod()) : null)")
+    Payment toEntity(PaymentDto dto);
 }

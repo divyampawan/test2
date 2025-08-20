@@ -480,63 +480,53 @@ class EcommerceApp {
         console.log('Cart item count:', this.cart.length);
 
         if (this.cart.length === 0) {
-            console.log('Cart is empty, showing empty message');
             container.innerHTML = '';
-            if (emptyCart) {
-                emptyCart.style.display = 'block';
-                console.log('Empty cart message shown');
-            }
-            if (checkoutBtn) {
-                checkoutBtn.style.display = 'none';
-                console.log('Checkout button hidden');
-            }
+            if (emptyCart) emptyCart.style.display = 'block';
+            if (checkoutBtn) checkoutBtn.style.display = 'none';
             if (cartSubtotal) cartSubtotal.textContent = '$0.00';
             if (cartTotal) cartTotal.textContent = '$0.00';
+            this.cartSubtotal = 0;
             return;
         }
 
-        console.log('Cart has items, showing checkout button');
-        if (emptyCart) {
-            emptyCart.style.display = 'none';
-            console.log('Empty cart message hidden');
-        }
-        if (checkoutBtn) {
-            checkoutBtn.style.display = 'block';
-            console.log('Checkout button shown');
-        }
+        if (emptyCart) emptyCart.style.display = 'none';
+        if (checkoutBtn) checkoutBtn.style.display = 'block';
 
         let total = 0;
         container.innerHTML = '';
 
         this.cart.forEach(item => {
-            // Handle both data structures - check if product is nested or flat
             const productName = item.productName || (item.product ? item.product.name : 'Unknown Product');
             const productDescription = item.productDescription || (item.product ? item.product.description : '');
-            const productPrice = item.productPrice || (item.product ? item.product.price : 0);
-            const imageUrl = item.productImageUrl || `https://placehold.co/100x100/EEE/31343C?text=No+Image`;
+            const productPrice = item.productPrice !== undefined ? item.productPrice : (item.product ? item.product.price : 0);
+            const imageUrl = item.productImageUrl || (item.product && item.product.imageUrl) || `https://placehold.co/100x100/EEE/31343C?text=No+Image`;
 
-            // Safely format prices
-            const price = typeof productPrice === 'number' ? productPrice.toFixed(2) : '0.00';
-            const itemTotal = item.quantity * (typeof productPrice === 'number' ? productPrice : 0);
-            const itemTotalFormatted = typeof itemTotal === 'number' ? itemTotal.toFixed(2) : '0.00';
-            total += itemTotal;
+            // Use server-provided subtotal if present, else calculate
+            const serverSubtotal = (item.subtotal !== undefined && item.subtotal !== null) ? Number(item.subtotal) : null;
+            const computedItemTotal = Number(item.quantity) * Number(productPrice || 0);
+            const itemTotal = (serverSubtotal !== null) ? serverSubtotal : computedItemTotal;
+
+            const priceFormatted = Number(productPrice || 0).toFixed(2);
+            const itemTotalFormatted = Number(itemTotal || 0).toFixed(2);
+
+            total += Number(itemTotal || 0);
 
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
             cartItem.innerHTML = `
                 <div class="row align-items-center">
                     <div class="col-2">
-                         <img src="${imageUrl}" alt="${this.escapeHtml(item.productName)}" class="img-fluid rounded">
+                         <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(productName)}" class="img-fluid rounded">
                     </div>
                     <div class="col-md-4">
                         <h6 class="mb-1">${this.escapeHtml(productName)}</h6>
                         <p class="text-muted mb-0">${this.escapeHtml(productDescription)}</p>
                     </div>
                     <div class="col-md-2">
-                        <span class="fw-bold">$${price}</span>
+                        <span class="fw-bold">$${priceFormatted}</span>
                     </div>
                     <div class="col-md-2">
-                        <input type="number" value="${item.quantity}" min="1" class="form-control quantity-input"
+                        <input type="number" value="${this.escapeHtml(item.quantity)}" min="1" class="form-control quantity-input"
                                onchange="app.updateQuantity(${item.id}, this.value)">
                     </div>
                     <div class="col-md-2">
@@ -552,43 +542,74 @@ class EcommerceApp {
             container.appendChild(cartItem);
         });
 
-        const totalFormatted = typeof total === 'number' ? total.toFixed(2) : '0.00';
-        const subtotalElement = document.getElementById('cart-subtotal');
-        const totalElement = document.getElementById('cart-total');
-        if (subtotalElement) subtotalElement.textContent = `$${totalFormatted}`;
-        if (totalElement) totalElement.textContent = `$${totalFormatted}`;
+        const totalFormatted = Number(total || 0).toFixed(2);
+        if (cartSubtotal) cartSubtotal.textContent = `$${totalFormatted}`;
+        if (cartTotal) cartTotal.textContent = `$${totalFormatted}`;
 
-        // Store the subtotal for discount calculations
-        this.cartSubtotal = total;
+        // keep a numeric subtotal for discount logic
+        this.cartSubtotal = Number(total || 0);
+    }
+
+    async loadCart() {
+        try {
+            const response = await this.authenticatedRequest('/api/v1/cart', { method: 'GET' });
+            if (response.ok) {
+                const data = await response.json();
+                this.cart = Array.isArray(data) ? data : [];
+                this.displayCart();
+            } else if (response.status === 401) {
+                // handle unauthenticated state if needed
+                this.cart = [];
+                this.displayCart();
+            } else {
+                console.error('Failed to load cart:', await response.text());
+            }
+        } catch (err) {
+            console.error('Error loading cart:', err);
+        }
     }
 
     async updateQuantity(itemId, newQuantity) {
-        if (newQuantity < 1) return;
+        newQuantity = parseInt(newQuantity, 10);
+        if (isNaN(newQuantity) || newQuantity < 1) return;
 
+        // 1) Optimistic update locally for immediate feedback
+        const localItem = this.cart.find(i => i.id === itemId);
+        if (localItem) {
+            localItem.quantity = newQuantity;
+            // if you want to update per-item subtotal client-side immediately:
+            if (localItem.productPrice !== undefined) {
+                localItem.subtotal = Number(localItem.productPrice) * Number(localItem.quantity);
+            }
+            this.displayCart();
+        }
+
+        // 2) Send update to server
         try {
             const response = await this.authenticatedRequest(`/api/v1/cart/${itemId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ quantity: parseInt(newQuantity) })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity: newQuantity })
             });
 
-            if (response.ok) {
-                // Get the updated cart directly from the response
-                const updatedCart = await response.json(); 
-                this.cart = Array.isArray(updatedCart) ? updatedCart : [];
-                this.displayCart(); // Refresh the UI with the new data
-            } else {
-                const error = await response.text();
-                this.showAlert('cart-alert', 'Failed to update quantity: ' + error, 'danger');
-                // Fall back to full cart reload on error
-                this.loadCart();
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Failed to update quantity:', text);
+                this.showAlert('cart-alert', 'Failed to update quantity: ' + text, 'danger');
+                // reload authoritative cart to fix mismatch
+                await this.loadCart();
+                return;
             }
-        } catch (error) {
-            this.showAlert('cart-alert', 'Failed to update quantity: ' + error.message, 'danger');
-            // Fall back to full cart reload on error
-            this.loadCart();
+
+            // Reconcile UI using GET /api/v1/cart (authoritative)
+            // Using GET avoids relying on PUT response shape.
+            await this.loadCart();
+            this.showAlert('cart-alert', 'Quantity updated', 'success');
+
+        } catch (err) {
+            console.error('Error updating quantity:', err);
+            this.showAlert('cart-alert', 'Failed to update quantity: ' + err.message, 'danger');
+            await this.loadCart();
         }
     }
 
@@ -794,61 +815,69 @@ class EcommerceApp {
         }
     }
 
-    async processFakePayment() {
+async processPayment() {
         const payButton = document.getElementById('pay-now-btn');
         payButton.disabled = true;
         payButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
 
         try {
-            // Step 1: Create the Order
+            // Step 1: Create the Order. This is still necessary to get an orderId.
             const orderResponse = await this.authenticatedRequest('/api/v1/orders', {
                 method: 'POST',
                 body: JSON.stringify({ discountCode: this.currentDiscountCode || null })
             });
-            if (!orderResponse.ok) throw new Error('Failed to create the order.');
+
+            if (!orderResponse.ok) {
+                const errorData = await orderResponse.json();
+                throw new Error(errorData.error || 'Failed to create the order.');
+            }
             const orderData = await orderResponse.json();
 
-            // Step 2: Create the Payment record
-            const paymentMethod = document.querySelector('#paymentMethodTabs .nav-link.active').id === 'card-tab' ? 'CARD' : 'UPI';
-            const createPaymentResponse = await this.authenticatedRequest('/api/v1/payments', {
+            // Step 2: Determine the selected payment method from the active tab.
+            const paymentMethod = document.querySelector('#paymentMethodTabs .nav-link.active').id === 'card-tab'
+                ? 'CARD'
+                : 'UPI';
+
+            // Step 3: Call the single, powerful createPayment endpoint.
+            // The backend now handles everything else (factory, processing, status updates).
+            const paymentResponse = await this.authenticatedRequest('/api/v1/payments', {
                 method: 'POST',
                 body: JSON.stringify({
                     orderId: orderData.id,
                     paymentMethod: paymentMethod,
-                    paymentDetails: `Simulated ${paymentMethod} Payment`
+                    paymentDetails: `Simulated ${paymentMethod} payment on client`
                 })
             });
-            if (!createPaymentResponse.ok) throw new Error('Failed to create the payment record.');
-            const paymentData = await createPaymentResponse.json();
 
-            // Step 3: Simulate the "Successful Payment" confirmation
-            const simulateResponse = await this.authenticatedRequest('/api/v1/payments/simulate-success', {
-                method: 'POST',
-                body: JSON.stringify({ transactionId: paymentData.transactionId })
-            });
-            if (!simulateResponse.ok) throw new Error('Payment confirmation failed.');
-            
-            // --- UI Updates after all backend calls succeed ---
+            const paymentData = await paymentResponse.json();
+
+            // Check if the final payment status from the backend is 'SUCCESS'.
+            if (!paymentResponse.ok || paymentData.paymentStatus !== 'SUCCESS') {
+                throw new Error(paymentData.error || `Payment was not successful. Status: ${paymentData.paymentStatus || 'UNKNOWN'}`);
+            }
+
+            // --- UI Updates after the single successful backend call ---
             setTimeout(() => {
                 const paymentModalEl = document.getElementById('paymentModal');
                 bootstrap.Modal.getInstance(paymentModalEl).hide();
 
                 this.showAlert('orders-alert', 'Payment successful! Your order has been placed.', 'success');
-                this.showOrders();
-                this.updateCartCount();
+                this.showOrders(); // Navigate to the orders page
+                this.cart = []; // Clear the local cart
+                this.updateCartCount(); // Update UI cart count to 0
 
-                // Reset the button's state on success
-                payButton.disabled = false;
-                payButton.innerHTML = `Pay <span id="payment-amount-display">${document.getElementById('cart-total').textContent}</span>`;
-            }, 1500); // 1.5 second delay for UX
+            }, 1000); // 1-second delay for good user experience
 
         } catch (error) {
-            console.error('Checkout process failed:', error);
-            this.showAlert('cart-alert', error.message || 'There was an issue with your checkout.', 'danger');
-            
-            // Reset the button's state on failure
-            payButton.disabled = false;
-            payButton.innerHTML = `Pay <span id="payment-amount-display">${document.getElementById('cart-total').textContent}</span>`;
+            console.error('Payment process failed:', error);
+            this.showAlert('cart-alert', error.message, 'danger');
+
+        } finally {
+            // This 'finally' block ensures the button is always re-enabled, even if an error occurs.
+            setTimeout(() => {
+                payButton.disabled = false;
+                payButton.innerHTML = `Pay <span id="payment-amount-display">${document.getElementById('cart-total').textContent}</span>`;
+            }, 1000);
         }
     }
 

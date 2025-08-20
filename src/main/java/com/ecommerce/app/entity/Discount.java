@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero; // Import the correct annotation
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -26,11 +27,12 @@ public class Discount {
     private String description;
     
     @NotNull(message = "Discount percentage is required")
-    @Positive(message = "Discount percentage must be positive")
+    // *** THE FIX IS HERE: Changed from @Positive to @PositiveOrZero ***
+    @PositiveOrZero(message = "Discount percentage must be zero or positive")
     private BigDecimal percentage;
     
     @NotNull(message = "Minimum order amount is required")
-    @Positive(message = "Minimum order amount must be positive")
+    @PositiveOrZero(message = "Minimum order amount must be zero or positive")
     private BigDecimal minimumOrderAmount;
     
     @NotNull(message = "Maximum discount amount is required")
@@ -189,4 +191,4 @@ public class Discount {
     public void incrementUsage() {
         this.usageCount++;
     }
-} 
+}

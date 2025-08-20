@@ -2,16 +2,12 @@ package com.ecommerce.app.dto;
 
 import com.ecommerce.app.entity.PaymentMethod;
 
-/**
- * DTO for the request to create a new payment.
- */
 public class CreatePaymentRequestDto {
 
     private Long orderId;
     private PaymentMethod paymentMethod;
-    private String paymentDetails; // e.g., "Card ending in 1234"
+    private String paymentDetails; 
 
-    // Getters and Setters
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
     

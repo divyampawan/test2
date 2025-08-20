@@ -2,14 +2,16 @@ package com.ecommerce.app.service;
 
 import com.ecommerce.app.entity.Discount;
 import com.ecommerce.app.repository.DiscountRepository;
+import com.ecommerce.app.service.interfaces.IDiscountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-public class DiscountService {
+public class DiscountService implements IDiscountService {
     
     @Autowired
     private DiscountRepository discountRepository;

@@ -2,6 +2,7 @@ package com.ecommerce.app.service;
 
 import com.ecommerce.app.entity.*;
 import com.ecommerce.app.repository.OrderRepository;
+import com.ecommerce.app.service.interfaces.IOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class OrderService {
+public class OrderService implements IOrderService {
     
     @Autowired
     private OrderRepository orderRepository;
@@ -44,7 +45,6 @@ public class OrderService {
         order.setOrderItems(orderItems);
         order.setSubtotal(subtotal);
         
-        // Apply discount if code is provided
         BigDecimal discountAmount = BigDecimal.ZERO;
         if (discountCode != null && !discountCode.trim().isEmpty()) {
             Optional<Discount> discountOpt = discountService.getDiscountByCode(discountCode);
@@ -59,7 +59,6 @@ public class OrderService {
         order.setDiscountAmount(discountAmount);
         order.setTotalAmount(subtotal.subtract(discountAmount));
         
-        // Save the order first
         Order savedOrder = orderRepository.save(order);
         
         // Increment discount usage if discount was applied
@@ -67,14 +66,12 @@ public class OrderService {
             discountService.incrementUsage(discountCode);
         }
         
-        // Clear the cart after order is saved
         cartService.clearCart(user);
         
         return savedOrder;
     }
     
-    // Discount calculation is now handled directly in the createOrder method
-    
+
     public Order processOrder(Long orderId) {
         Optional<Order> orderOpt = orderRepository.findById(orderId);
         if (orderOpt.isPresent()) {

@@ -2,6 +2,9 @@ package com.ecommerce.app.mapper;
 
 import com.ecommerce.app.dto.OrderDto;
 import com.ecommerce.app.entity.Order;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -9,66 +12,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class OrderMapper {
-    
+@Mapper(componentModel = "spring")
+public abstract class OrderMapper {
+
     @Autowired
-    private OrderItemMapper orderItemMapper;
+    protected OrderItemMapper orderItemMapper;
     
-    public OrderDto toDto(Order order) {
-        if (order == null) {
-            return null;
-        }
-        
-        OrderDto orderDto = new OrderDto();
-        orderDto.setId(order.getId());
-        orderDto.setOrderDate(order.getOrderDate());
-        orderDto.setStatus(order.getStatus());
-        orderDto.setSubtotal(order.getSubtotal());
-        orderDto.setTotalAmount(order.getTotalAmount());
-        orderDto.setDiscountCode(order.getDiscountCode());
-        orderDto.setDiscountAmount(order.getDiscountAmount());
-        
-        if (order.getDiscount() != null) {
-            orderDto.setDiscountId(order.getDiscount().getId());
-        }
-        
-        if (order.getUser() != null) {
-            orderDto.setUserId(order.getUser().getId());
-            orderDto.setUsername(order.getUser().getUsername());
-        }
-        
-        if (order.getOrderItems() != null) {
-            orderDto.setOrderItems(orderItemMapper.toDtoList(order.getOrderItems()));
-        }
-        
-        return orderDto;
-    }
+    @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "username", source = "user.username")
+    @Mapping(target = "discountId", source = "discount.id")
+    @Mapping(target = "orderItems", expression = "java(mapOrderItems(order.getOrderItems()))")
+    public abstract OrderDto toDto(Order order);
     
-    public Order toEntity(OrderDto orderDto) {
-        if (orderDto == null) {
-            return null;
-        }
-        
-        Order order = new Order();
-        order.setOrderDate(orderDto.getOrderDate());
-        order.setStatus(orderDto.getStatus());
-        order.setSubtotal(orderDto.getSubtotal());
-        order.setTotalAmount(orderDto.getTotalAmount());
-        order.setDiscountCode(orderDto.getDiscountCode());
-        order.setDiscountAmount(orderDto.getDiscountAmount());
-        
-        if (orderDto.getOrderItems() != null) {
-            order.setOrderItems(orderItemMapper.toEntityList(orderDto.getOrderItems()));
-        }
-        
-        return order;
-    }
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "discount", ignore = true)
+    @Mapping(target = "orderItems", expression = "java(mapOrderItemDtos(orderDto.getOrderItems()))")
+    public abstract Order toEntity(OrderDto orderDto);
     
     public List<OrderDto> toDtoList(List<Order> orders) {
         if (orders == null) {
             return null;
         }
-        
         return orders.stream()
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -78,9 +42,26 @@ public class OrderMapper {
         if (orderDtos == null) {
             return null;
         }
-        
         return orderDtos.stream()
                 .map(this::toEntity)
+                .collect(Collectors.toList());
+    }
+    
+    protected List<com.ecommerce.app.dto.OrderItemDto> mapOrderItems(List<com.ecommerce.app.entity.OrderItem> orderItems) {
+        if (orderItems == null) {
+            return null;
+        }
+        return orderItems.stream()
+                .map(orderItemMapper::toDto)
+                .collect(Collectors.toList());
+    }
+    
+    protected List<com.ecommerce.app.entity.OrderItem> mapOrderItemDtos(List<com.ecommerce.app.dto.OrderItemDto> orderItemDtos) {
+        if (orderItemDtos == null) {
+            return null;
+        }
+        return orderItemDtos.stream()
+                .map(orderItemMapper::toEntity)
                 .collect(Collectors.toList());
     }
 }

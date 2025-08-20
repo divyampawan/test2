@@ -48,6 +48,8 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
+    private String role;
+    
     // Constructors
     public User() {}
     
@@ -113,8 +115,16 @@ public class User {
         return createdAt;
     }
     
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+    
+    public String getRole() {
+        return role;
+    }
+    
+    public void setRole(String role) {
+        this.role = role;
     }
     
     public void setOrders(List<Order> orders) {

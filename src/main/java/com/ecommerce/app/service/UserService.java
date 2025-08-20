@@ -2,6 +2,7 @@ package com.ecommerce.app.service;
 
 import com.ecommerce.app.entity.User;
 import com.ecommerce.app.repository.UserRepository;
+import com.ecommerce.app.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class UserService {
+public class UserService implements IUserService {
     
     @Autowired
     private UserRepository userRepository;

@@ -5,9 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// Temporarily disabled - using ApiController instead
-//@RestController
-//@RequestMapping("/api/v1")
+
 @Deprecated
 public class HealthController {
 

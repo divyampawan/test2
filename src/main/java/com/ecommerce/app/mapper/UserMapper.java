@@ -2,63 +2,35 @@ package com.ecommerce.app.mapper;
 
 import com.ecommerce.app.dto.UserDto;
 import com.ecommerce.app.entity.User;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public class UserMapper {
-        
-    public UserDto toDto(User user) {
-        if (user == null) {
-            return null;
-        }
-        
-        UserDto userDto = new UserDto();
-        userDto.setId(user.getId());
-        userDto.setUsername(user.getUsername());
-        userDto.setEmail(user.getEmail());
-        userDto.setPhoneNumber(user.getPhoneNumber());
-        
-        return userDto;
-    }
-    
-    public User toEntity(UserDto userDto) {
-        if (userDto == null) {
-            return null;
-        }
-        
-        User user = new User();
-        user.setUsername(userDto.getUsername());
-        user.setPassword(userDto.getPassword());
-        user.setEmail(userDto.getEmail());
-        user.setPhoneNumber(userDto.getPhoneNumber());
-        
-        return user;
-    }
-    
-    public List<UserDto> toDtoList(List<User> users) {
-        if (users == null) {
-            return null;
-        }
-        
-        return users.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-    }
-    
-    public List<User> toEntityList(List<UserDto> userDtos) {
-        if (userDtos == null) {
-            return null;
-        }
-        
-        return userDtos.stream()
-                .map(this::toEntity)
-                .collect(Collectors.toList());
-    }
-    
-    public UserDto toProfileDto(User user) {
-        return toDto(user);
-    }
-} 
+@Mapper(
+    componentModel = "spring",
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
+public interface UserMapper {
+    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
+
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "currentPassword", ignore = true)
+    @Mapping(target = "newPassword", ignore = true)
+    @Mapping(target = "confirmPassword", ignore = true)
+    UserDto toDto(User user);
+
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "orders", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    User toEntity(UserDto userDto);
+
+    List<UserDto> toDtoList(List<User> users);
+
+    List<User> toEntityList(List<UserDto> userDtos);
+}

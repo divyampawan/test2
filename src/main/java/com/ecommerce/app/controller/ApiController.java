@@ -3,7 +3,12 @@ package com.ecommerce.app.controller;
 import com.ecommerce.app.dto.*;
 import com.ecommerce.app.entity.*;
 import com.ecommerce.app.mapper.*;
-import com.ecommerce.app.service.*;
+import com.ecommerce.app.service.interfaces.ICartService;
+import com.ecommerce.app.service.interfaces.IDiscountService;
+import com.ecommerce.app.service.interfaces.IOrderService;
+import com.ecommerce.app.service.interfaces.IProductService;
+import com.ecommerce.app.service.interfaces.IPaymentService;
+import com.ecommerce.app.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,44 +26,9 @@ import java.math.BigDecimal;
 @RequestMapping("/api/v1")
 @CrossOrigin(origins = "*")
 public class ApiController {
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private ProductService productService;
-    
-    @Autowired
-    private OrderService orderService;
-    
-    @Autowired
-    private CartService cartService;
-    
-    @Autowired
-    private UserMapper userMapper;
-    
-    @Autowired
-    private ProductMapper productMapper;
-    
-    @Autowired
-    private OrderMapper orderMapper;
-    
-    @Autowired
-    private CartItemMapper cartItemMapper;
-    
-    @Autowired
-    private DiscountMapper discountMapper;
-    
-    @Autowired
-    private PaymentService paymentService;
-    
-    @Autowired
-    private PaymentMapper paymentMapper;
-    
-    @Autowired
-    private DiscountService discountService;
-    
-    // User APIs
+
+    // User APIs - Moved to UserController
+    /*
     @GetMapping(value = "/users/profile", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<UserDto> getUserProfile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -124,60 +94,74 @@ public class ApiController {
         }
         return ResponseEntity.notFound().build();
     }
+    */
     
-    // Product APIs
+    // Product APIs - Moved to ProductController
+    /*
     @GetMapping("/products")
     public ResponseEntity<List<ProductDto>> getAllProducts() {
-        List<Product> products = productService.getAllProducts();
-        List<ProductDto> productDtos = productMapper.toDtoList(products);
-        return ResponseEntity.ok(productDtos);
+        try {
+            List<Product> products = productService.getAllProducts();
+            return ResponseEntity.ok(productMapper.toDtoList(products));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
-    
+
     @GetMapping("/products/{id}")
     public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) {
-        Optional<Product> productOpt = productService.getProductById(id);
-        if (productOpt.isPresent()) {
-            ProductDto productDto = productMapper.toDto(productOpt.get());
-            return ResponseEntity.ok(productDto);
+        try {
+            return productService.getProductById(id)
+                    .map(productMapper::toDto)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.notFound().build();
     }
-    
+
     @PostMapping("/products")
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto) {
-        Product product = productMapper.toEntity(productDto);
-        Product savedProduct = productService.saveProduct(product);
-        ProductDto savedProductDto = productMapper.toDto(savedProduct);
-        return ResponseEntity.ok(savedProductDto);
+        try {
+            Product product = productMapper.toEntity(productDto);
+            Product savedProduct = productService.saveProduct(product);
+            return ResponseEntity.ok(productMapper.toDto(savedProduct));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
-    
+
     @PutMapping("/products/{id}")
     public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id, @RequestBody ProductDto productDto) {
-        Optional<Product> productOpt = productService.getProductById(id);
-        if (productOpt.isPresent()) {
-            Product product = productOpt.get();
-            product.setName(productDto.getName());
-            product.setDescription(productDto.getDescription());
-            product.setPrice(productDto.getPrice());
-            product.setStockQuantity(productDto.getStockQuantity());
-            Product updatedProduct = productService.saveProduct(product);
-            ProductDto updatedProductDto = productMapper.toDto(updatedProduct);
-            return ResponseEntity.ok(updatedProductDto);
+        try {
+            return productService.getProductById(id)
+                    .map(existingProduct -> {
+                        productMapper.updateProductFromDto(productDto, existingProduct);
+                        Product updatedProduct = productService.saveProduct(existingProduct);
+                        return ResponseEntity.ok(productMapper.toDto(updatedProduct));
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.notFound().build();
     }
-    
+
     @DeleteMapping("/products/{id}")
     public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
-        Optional<Product> productOpt = productService.getProductById(id);
-        if (productOpt.isPresent()) {
-            productService.deleteProduct(id);
-            return ResponseEntity.ok("Product deleted successfully");
+        try {
+            if (productService.getProductById(id).isPresent()) {
+                productService.deleteProduct(id);
+                return ResponseEntity.ok("Product deleted successfully");
+            }
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error deleting product");
         }
-        return ResponseEntity.notFound().build();
     }
+    */
     
-    // Cart APIs
+    // Cart APIs - Moved to CartController
+    /*
     @GetMapping("/cart")
     public ResponseEntity<List<CartItemDto>> getCart() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -193,7 +177,10 @@ public class ApiController {
         }
         return ResponseEntity.notFound().build();
     }
+    */
     
+    // Cart endpoints moved to CartController
+    /*
     @PostMapping("/cart/add")
     public ResponseEntity<String> addToCart(@RequestBody Map<String, Object> request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -247,91 +234,79 @@ public class ApiController {
             return ResponseEntity.badRequest().build();
         }
     }
+    */
     
-    // Order APIs
+    // Order APIs - Moved to OrderController
+    /*
     @GetMapping("/orders")
     public ResponseEntity<List<OrderDto>> getUserOrders() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        String username = authentication.getName();
+        Optional<User> userOpt = userService.findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).build();
         }
         
-        String username = authentication.getName();
-        Optional<User> userOpt = userService.findByUsername(username);
-        if (userOpt.isPresent()) {
-            List<Order> orders = orderService.getUserOrders(userOpt.get());
-            List<OrderDto> orderDtos = orderMapper.toDtoList(orders);
-            return ResponseEntity.ok(orderDtos);
-        }
-        return ResponseEntity.notFound().build();
+        List<Order> orders = orderService.getUserOrders(userOpt.get());
+        List<OrderDto> orderDtos = orderMapper.toDtoList(orders);
+        return ResponseEntity.ok(orderDtos);
     }
     
     @GetMapping("/orders/{id}")
     public ResponseEntity<OrderDto> getOrderById(@PathVariable Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        String username = authentication.getName();
+        Optional<User> userOpt = userService.findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).build();
         }
         
-        String username = authentication.getName();
-        Optional<User> userOpt = userService.findByUsername(username);
-        if (userOpt.isPresent()) {
-            Optional<Order> orderOpt = orderService.getOrderById(id);
-            if (orderOpt.isPresent()) {
-                Order order = orderOpt.get();
-                if (!order.getUser().getId().equals(userOpt.get().getId())) {
-                    return ResponseEntity.status(403).build();
-                }
-                OrderDto orderDto = orderMapper.toDto(order);
-                return ResponseEntity.ok(orderDto);
+        Optional<Order> orderOpt = orderService.getOrderById(id);
+        if (orderOpt.isPresent()) {
+            // Security check: Ensure the user owns this order
+            if (!orderOpt.get().getUser().getId().equals(userOpt.get().getId())) {
+                return ResponseEntity.status(403).build(); // Forbidden
             }
+            return ResponseEntity.ok(orderMapper.toDto(orderOpt.get()));
         }
         return ResponseEntity.notFound().build();
     }
     
     @PostMapping("/orders")
-    public ResponseEntity<OrderDto> createOrder(@RequestBody(required = false) Map<String, Object> request) {
+    public ResponseEntity<?> createOrder(@RequestBody(required = false) Map<String, Object> request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        String username = authentication.getName();
+        Optional<User> userOpt = userService.findByUsername(username);
+        
+        if (userOpt.isEmpty()) {
             return ResponseEntity.status(401).build();
         }
         
-        String username = authentication.getName();
-        Optional<User> userOpt = userService.findByUsername(username);
-        if (userOpt.isPresent()) {
-            try {
-                String discountCode = null;
-                if (request != null && request.containsKey("discountCode")) {
-                    discountCode = (String) request.get("discountCode");
-                }
-                Order order = orderService.createOrder(userOpt.get(), discountCode);
-                OrderDto orderDto = orderMapper.toDto(order);
-                return ResponseEntity.ok(orderDto);
-            } catch (RuntimeException e) {
-                return ResponseEntity.badRequest().build();
-            }
+        try {
+            String discountCode = (request != null && request.containsKey("discountCode")) 
+                ? (String) request.get("discountCode") 
+                : null;
+                
+            Order order = orderService.createOrder(userOpt.get(), discountCode);
+            return ResponseEntity.ok(orderMapper.toDto(order));
+        } catch (Exception e) {
+            // Return a 400 error with the actual error message
+            Map<String, String> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
-        return ResponseEntity.notFound().build();
     }
     
     @PutMapping("/orders/{id}/process")
     public ResponseEntity<String> processOrder(@PathVariable Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-        
         orderService.processOrder(id);
         return ResponseEntity.ok("Order processed successfully");
     }
     
     @PutMapping("/orders/{id}/complete")
     public ResponseEntity<String> completeOrder(@PathVariable Long id) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).build();
-        }
-        
         orderService.completeOrder(id);
         return ResponseEntity.ok("Order completed successfully");
     }
@@ -342,17 +317,17 @@ public class ApiController {
         return ResponseEntity.ok("Ecommerce API is running!");
     }
     
-    // Discount APIs
+    // Discount APIs - Moved to DiscountController
+    /*
     @GetMapping("/discounts/validate")
     public ResponseEntity<Map<String, Object>> validateDiscount(@RequestParam String code, @RequestParam BigDecimal amount) {
         Map<String, Object> response = new HashMap<>();
-        
         if (discountService.isValidDiscount(code)) {
             BigDecimal discountAmount = discountService.calculateDiscount(code, amount);
             response.put("valid", true);
             response.put("discountAmount", discountAmount);
             response.put("message", "Discount applied successfully");
-            
+
             // Get discount details
             Optional<Discount> discountOpt = discountService.getDiscountByCode(code);
             if (discountOpt.isPresent()) {
@@ -364,7 +339,6 @@ public class ApiController {
             response.put("valid", false);
             response.put("message", "Invalid or expired discount code");
         }
-        
         return ResponseEntity.ok(response);
     }
     
@@ -382,18 +356,20 @@ public class ApiController {
         DiscountDto savedDiscountDto = discountMapper.toDto(savedDiscount);
         return ResponseEntity.ok(savedDiscountDto);
     }
+    */
 
+    // Payment APIs - Moved to PaymentController
+    /*
     @PostMapping("/payments")
     public ResponseEntity<PaymentDto> createPayment(@RequestBody CreatePaymentRequestDto requestDto) {
         try {
             PaymentDto paymentDto = paymentService.createPayment(requestDto);
             return ResponseEntity.ok(paymentDto);
         } catch (Exception e) {
-            // Return the error message in the response for easier debugging on the frontend
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().build();
         }
     }
-
+    
     @PostMapping("/payments/simulate-success")
     public ResponseEntity<PaymentDto> simulateSuccessfulPayment(@RequestBody Map<String, String> payload) {
         try {
@@ -401,12 +377,12 @@ public class ApiController {
             if (transactionId == null || transactionId.trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
-
+            
             PaymentDto updatedPayment = paymentService.updatePaymentStatus(transactionId, PaymentStatus.SUCCESS);
             return ResponseEntity.ok(updatedPayment);
-
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
+    */
 }
